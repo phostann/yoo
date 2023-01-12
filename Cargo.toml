@@ -1,0 +1,10 @@
+[package]
+name = "yoo"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [".", "api", "migration", "entity", "core"]
+
+[dependencies]
+api = { version = "0.1.0", path = "api" }
