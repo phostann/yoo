@@ -1,6 +1,7 @@
 use axum::{
+    extract::DefaultBodyLimit,
     routing::{get, post},
-    Router, Server, extract::DefaultBodyLimit,
+    Router, Server,
 };
 use sea_orm::Database;
 use std::{env, net::SocketAddr, str::FromStr};
@@ -27,7 +28,7 @@ async fn start() -> anyhow::Result<()> {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let host = env::var("HOST").expect("HOST must be set");
     let port = env::var("PORT").expect("PORT must be set");
-    let server_url = format!("{}:{}", host, port);
+    let server_url = format!("{host}:{port}");
 
     let conn = Database::connect(db_url)
         .await
@@ -83,6 +84,6 @@ pub fn main() {
     let result = start();
 
     if let Some(err) = result.err() {
-        eprintln!("Error: {}", err);
+        eprintln!("Error: {err}");
     }
 }

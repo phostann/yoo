@@ -9,7 +9,6 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub group_id: i32,
-    #[sea_orm(unique)]
     pub name: String,
     pub values: Json,
     pub created_at: DateTime,
@@ -22,8 +21,8 @@ pub enum Relation {
         belongs_to = "super::groups::Entity",
         from = "Column::GroupId",
         to = "super::groups::Column::Id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
+        on_update = "NoAction",
+        on_delete = "NoAction"
     )]
     Groups,
 }

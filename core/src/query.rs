@@ -63,7 +63,7 @@ impl Query {
         page_size: u64,
         filter: ConfigFilter,
     ) -> Result<(Vec<configs::Model>, u64, u64), DbErr> {
-        let mut query = Config::find();
+        let mut query = Config::find().order_by_desc(configs::Column::UpdatedAt);
 
         if let Some(group_id) = filter.group_id {
             query = query.filter(configs::Column::GroupId.eq(group_id));
@@ -101,14 +101,10 @@ impl Query {
         page_size: u64,
         filter: TemplateFilter,
     ) -> Result<(Vec<templates::Model>, u64, u64), DbErr> {
-        let mut query = Template::find();
+        let mut query = Template::find().order_by_desc(templates::Column::UpdatedAt);
 
         if let Some(name) = filter.name {
             query = query.filter(templates::Column::Name.contains(name.as_ref()));
-        }
-
-        if let Some(kind) = filter.kind {
-            query = query.filter(templates::Column::Kind.eq(kind));
         }
 
         if let Some(tag) = filter.tag {

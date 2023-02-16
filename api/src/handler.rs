@@ -316,14 +316,14 @@ pub async fn update_template_by_id(
     state: State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateTemplate>,
-) -> Result<Json<Resp<templates::Model>>, (StatusCode, &'static str)> {
+) -> Result<Json<Resp<templates::Model>>, (StatusCode, String)> {
     MutationCore::update_template_by_id(&state.conn, id, payload)
         .await
         .map_err(|e| {
             tracing::error!("Failed to update template: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to update template",
+                format!("Failed to update template: {}", e),
             )
         })
         .map(Resp::new)

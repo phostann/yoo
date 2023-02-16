@@ -71,7 +71,6 @@ pub struct TemplateFilter {
 pub struct NewTemplate {
     pub name: String,
     pub brief: String,
-    pub kind: String,
     pub repo: String,
 }
 

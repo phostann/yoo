@@ -101,7 +101,6 @@ impl Mutation {
         templates::ActiveModel {
             name: Set(payload.name),
             brief: Set(payload.brief),
-            kind: Set(payload.kind),
             repo: Set(payload.repo),
             ..Default::default()
         }
@@ -121,10 +120,6 @@ impl Mutation {
 
         if let Some(brief) = payload.brief {
             template.brief = Set(brief);
-        }
-
-        if let Some(kind) = payload.kind {
-            template.kind = Set(kind);
         }
 
         if let Some(tags) = payload.tags {

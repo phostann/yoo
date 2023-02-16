@@ -122,14 +122,14 @@ pub fn gen_auth_body(user: users::Model) -> Result<AuthBody, AuthError> {
     let mut claims = Claims {
         sub: user.email.to_owned(),
         id: user.id,
-        exp: (chrono::Utc::now() + chrono::Duration::hours(2)).timestamp() as usize,
+        exp: (chrono::Utc::now() + chrono::Duration::days(7)).timestamp() as usize,
         claims_type: ClaimsType::AccessToken,
     };
 
     let access_token = encode(&Header::default(), &claims, &KEYS.encoding)
         .map_err(|_| AuthError::TokenCreation)?;
 
-    claims.exp = (chrono::Utc::now() + chrono::Duration::days(7)).timestamp() as usize;
+    claims.exp = (chrono::Utc::now() + chrono::Duration::days(30)).timestamp() as usize;
     claims.claims_type = ClaimsType::RefreshToken;
 
     let refresh_token = encode(&Header::default(), &claims, &KEYS.encoding)
