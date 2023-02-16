@@ -4,7 +4,7 @@ use axum::{
 };
 use s3::{creds::Credentials, Bucket, Region};
 use sea_orm::DatabaseConnection;
-use std::collections::HashSet;
+use std::{collections::HashSet, env};
 use yoo_core::{
     ConfigFilter, GroupFilter, Mutation as MutationCore, NewConfig, NewGroup, NewTemplate, NewUser,
     Pagination, Query as QueryCore, TemplateFilter, UpdateConfig, UpdateGroup, UpdateTemplate,
@@ -22,8 +22,6 @@ use entity::{configs, groups, templates};
 pub struct AppState {
     pub conn: DatabaseConnection,
 }
-
-const MINIO_SERVER: &str = "http://localhost:9000";
 
 pub async fn register(
     state: State<AppState>,
@@ -369,15 +367,19 @@ pub async fn get_template_tags(
 }
 
 pub async fn upload(mut multipart: Multipart) -> Result<Json<Resp<String>>, (StatusCode, String)> {
+    let minio_server = env::var("MINIO_SERVER").expect("MINIO_SERVER must be set");
+    let minio_access_key = env::var("MINIO_ACCESS_KEY").expect("MINIO_ACCESS_KEY must be set");
+    let minio_secret_key = env::var("MINIO_SECRET_KEY").expect("MINIO_SECRET_KEY must be set");
+
     let bucket = Bucket::new(
         "yoo-config",
         Region::Custom {
             region: "".to_owned(),
-            endpoint: MINIO_SERVER.to_string(),
+            endpoint: minio_server.clone(),
         },
         Credentials {
-            access_key: Some("iPFDfsb7dcJFleFb".to_owned()),
-            secret_key: Some("Bi4zam6eSxsnobIzymegTT4YLAuQemCV".to_owned()),
+            access_key: Some(minio_access_key),
+            secret_key: Some(minio_secret_key),
             security_token: None,
             session_token: None,
             expiration: None,
@@ -438,7 +440,7 @@ pub async fn upload(mut multipart: Multipart) -> Result<Json<Resp<String>>, (Sta
         if res.status_code() == 200 {
             return Ok(Json(Resp::new(format!(
                 "{}/yoo-config/{}",
-                MINIO_SERVER, key
+                minio_server, key
             ))));
         }
     }
