@@ -6,8 +6,9 @@ use s3::{creds::Credentials, Bucket, Region};
 use sea_orm::DatabaseConnection;
 use std::{collections::HashSet, env};
 use yoo_core::{
-    ConfigFilter, GroupFilter, Mutation as MutationCore, NewConfig, NewGroup, NewTemplate, NewUser,
-    Pagination, Query as QueryCore, TemplateFilter, UpdateConfig, UpdateGroup, UpdateTemplate,
+    ConfigFilter, GroupFilter, Mutation as MutationCore, NewConfig, NewGroup, NewProject,
+    NewTemplate, NewUser, Pagination, ProjectFilter, Query as QueryCore, TemplateFilter,
+    UpdateConfig, UpdateGroup, UpdateProject, UpdateTemplate,
 };
 
 use crate::{
@@ -16,7 +17,7 @@ use crate::{
     vo::UserVo,
 };
 use bcrypt::{hash, DEFAULT_COST};
-use entity::{configs, groups, templates};
+use entity::{configs, groups, projects, templates};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -62,11 +63,11 @@ pub async fn login(
     state: State<AppState>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<Json<Resp<AuthBody>>, AuthError> {
-    if payload.email.is_empty() || payload.password.is_empty() {
+    if payload.username.is_empty() || payload.password.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
 
-    let user = QueryCore::find_user_by_email(&state.conn, payload.email.as_ref())
+    let user = QueryCore::find_user_by_email(&state.conn, payload.username.as_ref())
         .await
         .map_err(|_| AuthError::WrongCredentials)?;
 
@@ -446,4 +447,93 @@ pub async fn upload(mut multipart: Multipart) -> Result<Json<Resp<String>>, (Sta
     }
 
     Err((StatusCode::BAD_REQUEST, "No file".to_string()))
+}
+
+pub async fn list_projects(
+    state: State<AppState>,
+    Query(pagination): Query<Pagination>,
+    Query(filter): Query<ProjectFilter>,
+) -> Result<Json<PageResp<projects::Model>>, (StatusCode, &'static str)> {
+    QueryCore::list_projects(&state.conn, pagination.page, pagination.page_size, filter)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to list projects: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to list projects")
+        })
+        .map(|res| PageResp::new(res.0, res.1, res.2))
+        .map(Json)
+}
+
+// get project by id
+pub async fn get_project_by_id(
+    state: State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<Json<Resp<Option<projects::Model>>>, (StatusCode, &'static str)> {
+    QueryCore::get_project_by_id(&state.conn, id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get project by id: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to get project by id",
+            )
+        })
+        .map(Resp::new)
+        .map(Json)
+}
+
+// create project
+pub async fn create_project(
+    _: Claims,
+    state: State<AppState>,
+    Json(payload): Json<NewProject>,
+) -> Result<Json<Resp<projects::Model>>, (StatusCode, String)> {
+    MutationCore::create_project(&state.conn, payload)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to create project: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create project: {}", e),
+            )
+        })
+        .map(Resp::new)
+        .map(Json)
+}
+
+// update project by id
+pub async fn update_project_by_id(
+    _: Claims,
+    state: State<AppState>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateProject>,
+) -> Result<Json<Resp<projects::Model>>, (StatusCode, String)> {
+    MutationCore::update_project_by_id(&state.conn, id, payload)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update project: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to update project: {}", e),
+            )
+        })
+        .map(Resp::new)
+        .map(Json)
+}
+
+// delete project by id
+pub async fn delete_project_by_id(
+    _: Claims,
+    state: State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<Json<Resp<()>>, (StatusCode, String)> {
+    let res = MutationCore::delete_project_by_id(&state.conn, id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if res.rows_affected == 1 {
+        Ok(Json(Resp::new(())))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Project not found".to_string()))
+    }
 }

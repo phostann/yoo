@@ -66,6 +66,14 @@ async fn start() -> anyhow::Result<()> {
         )
         .route("/templates", get(handler::list_templates))
         .route("/template/tags", get(handler::get_template_tags))
+        .route("/project", post(handler::create_project))
+        .route("/projects", get(handler::list_projects))
+        .route(
+            "/project/:id",
+            get(handler::get_project_by_id)
+                .patch(handler::update_project_by_id)
+                .delete(handler::delete_project_by_id),
+        )
         .route("/upload", post(handler::upload))
         .layer(CorsLayer::permissive())
         // max body size is 5MB

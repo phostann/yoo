@@ -4,14 +4,17 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "templates")]
+#[sea_orm(table_name = "projects")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    #[sea_orm(unique)]
     pub name: String,
+    #[sea_orm(unique)]
     pub repo: String,
-    pub brief: String,
-    pub tags: Option<Vec<String>>,
+    #[sea_orm(unique)]
+    pub repo_id: i32,
+    pub description: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }

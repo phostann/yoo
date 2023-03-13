@@ -1,6 +1,7 @@
 use ::entity::{
-    configs, configs::Entity as Config, groups, groups::Entity as Group, templates,
-    templates::Entity as Template, users, users::Entity as User,
+    configs, configs::Entity as Config, groups, groups::Entity as Group, projects,
+    projects::Entity as Project, templates, templates::Entity as Template, users,
+    users::Entity as User,
 };
 use sea_orm::{
     sea_query::{Expr, PgFunc},
@@ -8,7 +9,7 @@ use sea_orm::{
 };
 use std::collections::HashSet;
 
-use crate::{ConfigFilter, GroupFilter, TemplateFilter};
+use crate::{ConfigFilter, GroupFilter, ProjectFilter, TemplateFilter};
 
 pub struct Query;
 
@@ -148,5 +149,41 @@ impl Query {
         let res = res.into_iter().flatten().collect::<HashSet<String>>();
 
         Ok(res)
+    }
+
+    // query project by id
+    pub async fn get_project_by_id(
+        db: &DbConn,
+        project_id: i32,
+    ) -> Result<Option<projects::Model>, DbErr> {
+        projects::Entity::find_by_id(project_id).one(db).await
+    }
+
+    // list projects
+    pub async fn list_projects(
+        db: &DbConn,
+        page: u64,
+        page_size: u64,
+        filter: ProjectFilter,
+    ) -> Result<(Vec<projects::Model>, u64, u64), DbErr> {
+        let mut query = Project::find().order_by_desc(projects::Column::UpdatedAt);
+
+        if let Some(name) = filter.name {
+            query = query.filter(projects::Column::Name.contains(name.as_ref()));
+        }
+
+        if let Some(description) = filter.description {
+            query = query.filter(projects::Column::Description.contains(description.as_ref()));
+        }
+
+        let paginator = query.paginate(db, page_size);
+
+        let total = paginator.num_items().await?;
+        let num_pages = paginator.num_pages().await?;
+
+        paginator
+            .fetch_page(page - 1)
+            .await
+            .map(|p| (p, total, num_pages))
     }
 }

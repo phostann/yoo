@@ -93,7 +93,7 @@ impl AuthBody {
 
 #[derive(Debug, Deserialize)]
 pub struct AuthPayload {
-    pub email: String,
+    pub username: String,
     pub password: String,
 }
 

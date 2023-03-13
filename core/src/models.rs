@@ -1,5 +1,5 @@
-use serde::{Deserialize};
 use sea_orm::entity::prelude::Json;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Pagination {
@@ -16,7 +16,6 @@ fn default_page() -> u64 {
 fn default_page_size() -> u64 {
     10
 }
-
 
 #[derive(Deserialize, Default)]
 pub struct GroupFilter {
@@ -81,4 +80,24 @@ pub struct UpdateTemplate {
     pub kind: Option<String>,
     pub tags: Option<Vec<String>>,
     pub repo: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct NewProject {
+    pub name: String,
+    pub repo: String,
+    pub repo_id: i32,
+    pub description: String,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateProject {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ProjectFilter {
+    pub name: Option<String>,
+    pub description: Option<String>,
 }
