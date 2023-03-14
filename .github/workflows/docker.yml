@@ -15,6 +15,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Echo 
+    // echo the docker username and password
+      run: |
+        echo ${{ env.DOCKER_USERNAME }}
+        echo ${{ env.DOCKER_PASSWORD }}
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
 
