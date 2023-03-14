@@ -2,7 +2,6 @@ FROM rust:1.67.1 as builder
 WORKDIR /usr/src/yoo
 COPY . .
 
-ENV CARGO_REGISTRY_DEFAULT=git://mirrors.ustc.edu.cn/crates.io-index
 RUN cargo build --release
 
 FROM debian:buster-slim
