@@ -9,7 +9,7 @@ use sea_orm::{
 };
 use std::collections::HashSet;
 
-use crate::{ConfigFilter, GroupFilter, ProjectFilter, TemplateFilter};
+use crate::{ConfigFilter, GroupFilter, ProjectFilter, ProjectVo, TemplateFilter};
 
 pub struct Query;
 
@@ -96,6 +96,10 @@ impl Query {
             .await
     }
 
+    pub async fn find_user_by_id(db: &DbConn, id: i32) -> Result<Option<users::Model>, DbErr> {
+        User::find_by_id(id).one(db).await
+    }
+
     pub async fn list_templates(
         db: &DbConn,
         page: u64,
@@ -155,8 +159,22 @@ impl Query {
     pub async fn get_project_by_id(
         db: &DbConn,
         project_id: i32,
-    ) -> Result<Option<projects::Model>, DbErr> {
-        projects::Entity::find_by_id(project_id).one(db).await
+    ) -> Result<Option<ProjectVo>, DbErr> {
+        let res = projects::Entity::find_by_id(project_id)
+            .find_also_related(User)
+            .one(db)
+            .await?;
+
+        match res {
+            Some((p, u)) => {
+                if let Some(u) = u {
+                    Ok(Some(ProjectVo::new(p, u.nickname)))
+                } else {
+                    Err(DbErr::Custom("Project not found".to_string()))
+                }
+            }
+            None => Err(DbErr::Custom("Project not found".to_string())),
+        }
     }
 
     // list projects
@@ -165,8 +183,10 @@ impl Query {
         page: u64,
         page_size: u64,
         filter: ProjectFilter,
-    ) -> Result<(Vec<projects::Model>, u64, u64), DbErr> {
-        let mut query = Project::find().order_by_desc(projects::Column::UpdatedAt);
+    ) -> Result<(Vec<ProjectVo>, u64, u64), DbErr> {
+        let mut query = Project::find()
+            .order_by_desc(projects::Column::UpdatedAt)
+            .find_also_related(User);
 
         if let Some(name) = filter.name {
             query = query.filter(projects::Column::Name.contains(name.as_ref()));
@@ -181,9 +201,25 @@ impl Query {
         let total = paginator.num_items().await?;
         let num_pages = paginator.num_pages().await?;
 
-        paginator
+        let res = paginator
             .fetch_page(page - 1)
             .await
-            .map(|p| (p, total, num_pages))
+            .map(|p| (p, total, num_pages))?;
+
+        let (list, total, page) = res;
+
+        let list: Result<Vec<ProjectVo>, DbErr> = list
+            .into_iter()
+            .map(|(project, user)| match user {
+                Some(user) => Ok(ProjectVo::new(project, user.nickname)),
+                None => Err(DbErr::Custom("User not found".to_string())),
+            })
+            .collect();
+        let list = match list {
+            Ok(list) => list,
+            Err(err) => return Err(err),
+        };
+
+        Ok((list, total, page))
     }
 }

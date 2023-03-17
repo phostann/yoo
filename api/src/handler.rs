@@ -7,7 +7,7 @@ use sea_orm::DatabaseConnection;
 use std::{collections::HashSet, env};
 use yoo_core::{
     ConfigFilter, GroupFilter, Mutation as MutationCore, NewConfig, NewGroup, NewProject,
-    NewTemplate, NewUser, Pagination, ProjectFilter, Query as QueryCore, TemplateFilter,
+    NewTemplate, NewUser, Pagination, ProjectFilter, ProjectVo, Query as QueryCore, TemplateFilter,
     UpdateConfig, UpdateGroup, UpdateProject, UpdateTemplate,
 };
 
@@ -17,7 +17,7 @@ use crate::{
     vo::UserVo,
 };
 use bcrypt::{hash, DEFAULT_COST};
-use entity::{configs, groups, projects, templates};
+use entity::{configs, groups, templates};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -453,7 +453,7 @@ pub async fn list_projects(
     state: State<AppState>,
     Query(pagination): Query<Pagination>,
     Query(filter): Query<ProjectFilter>,
-) -> Result<Json<PageResp<projects::Model>>, (StatusCode, &'static str)> {
+) -> Result<Json<PageResp<ProjectVo>>, (StatusCode, &'static str)> {
     QueryCore::list_projects(&state.conn, pagination.page, pagination.page_size, filter)
         .await
         .map_err(|e| {
@@ -468,7 +468,7 @@ pub async fn list_projects(
 pub async fn get_project_by_id(
     state: State<AppState>,
     Path(id): Path<i32>,
-) -> Result<Json<Resp<Option<projects::Model>>>, (StatusCode, &'static str)> {
+) -> Result<Json<Resp<Option<ProjectVo>>>, (StatusCode, &'static str)> {
     QueryCore::get_project_by_id(&state.conn, id)
         .await
         .map_err(|e| {
@@ -484,11 +484,11 @@ pub async fn get_project_by_id(
 
 // create project
 pub async fn create_project(
-    _: Claims,
+    claims: Claims,
     state: State<AppState>,
     Json(payload): Json<NewProject>,
-) -> Result<Json<Resp<projects::Model>>, (StatusCode, String)> {
-    MutationCore::create_project(&state.conn, payload)
+) -> Result<Json<Resp<ProjectVo>>, (StatusCode, String)> {
+    MutationCore::create_project(&state.conn, payload, claims.id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to create project: {}", e);
@@ -507,7 +507,7 @@ pub async fn update_project_by_id(
     state: State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateProject>,
-) -> Result<Json<Resp<projects::Model>>, (StatusCode, String)> {
+) -> Result<Json<Resp<ProjectVo>>, (StatusCode, String)> {
     MutationCore::update_project_by_id(&state.conn, id, payload)
         .await
         .map_err(|e| {

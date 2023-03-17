@@ -1,7 +1,9 @@
-mod query;
-mod mutation;
 mod models;
+mod mutation;
+mod query;
+mod vo;
 
-pub use query::*;
-pub use mutation::*;
 pub use models::*;
+pub use mutation::*;
+pub use query::*;
+pub use vo::*;

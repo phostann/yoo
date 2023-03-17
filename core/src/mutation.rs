@@ -1,13 +1,14 @@
 use ::entity::{
     configs, configs::Entity as Config, groups, groups::Entity as Group, projects,
     projects::Entity as Project, templates, templates::Entity as Template, users,
+    users::Entity as User,
 };
 use chrono::Local;
 use sea_orm::{ActiveValue::Set, *};
 
 use crate::{
-    NewConfig, NewGroup, NewProject, NewTemplate, UpdateConfig, UpdateGroup, UpdateProject,
-    UpdateTemplate,
+    NewConfig, NewGroup, NewProject, NewTemplate, ProjectVo, UpdateConfig, UpdateGroup,
+    UpdateProject, UpdateTemplate,
 };
 
 pub struct Mutation;
@@ -156,17 +157,26 @@ impl Mutation {
     pub async fn create_project(
         db: &DbConn,
         payload: NewProject,
-    ) -> Result<projects::Model, DbErr> {
-        projects::ActiveModel {
+        user_id: i32,
+    ) -> Result<ProjectVo, DbErr> {
+        let project = projects::ActiveModel {
             name: Set(payload.name),
             repo: Set(payload.repo),
             repo_id: Set(payload.repo_id),
             description: Set(payload.description),
+            user_id: Set(user_id),
             ..Default::default()
         }
         .save(db)
         .await?
-        .try_into_model()
+        .try_into_model()?;
+
+        let user = project.find_related(User).one(db).await?;
+
+        match user {
+            Some(user) => Ok(ProjectVo::new(project, user.nickname)),
+            None => Err(DbErr::Custom("Failed to find user".to_string())),
+        }
     }
 
     // update project by id
@@ -174,7 +184,7 @@ impl Mutation {
         db: &DbConn,
         id: i32,
         payload: UpdateProject,
-    ) -> Result<projects::Model, DbErr> {
+    ) -> Result<ProjectVo, DbErr> {
         let mut project = projects::ActiveModel::new();
 
         project.id = Set(id);
@@ -188,7 +198,14 @@ impl Mutation {
         }
 
         project.updated_at = Set(Local::now().naive_local());
-        project.update(db).await?.try_into_model()
+        let project = project.update(db).await?.try_into_model()?;
+
+        let user = project.find_related(User).one(db).await?;
+
+        match user {
+            Some(user) => Ok(ProjectVo::new(project, user.nickname)),
+            None => Err(DbErr::Custom("Failed to find user".to_string())),
+        }
     }
 
     // delete project by id
