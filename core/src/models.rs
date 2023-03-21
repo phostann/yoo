@@ -1,8 +1,4 @@
-use sea_orm::entity::prelude::Json;
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-pub struct Pagination {
+use sea_orm::entity::prelude::Json; use serde::Deserialize; #[derive(Deserialize)] pub struct Pagination {
     #[serde(default = "default_page")]
     pub page: u64,
     #[serde(default = "default_page_size")]

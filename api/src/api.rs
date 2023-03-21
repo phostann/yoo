@@ -1,6 +1,6 @@
 use axum::{
     extract::DefaultBodyLimit,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router, Server,
 };
 use sea_orm::Database;
@@ -36,6 +36,7 @@ async fn start() -> anyhow::Result<()> {
 
     let state = AppState { conn };
 
+    
     let app = Router::new()
         .route("/register", post(handler::register))
         .route("/login", post(handler::login))
@@ -73,6 +74,10 @@ async fn start() -> anyhow::Result<()> {
             get(handler::get_project_by_id)
                 .patch(handler::update_project_by_id)
                 .delete(handler::delete_project_by_id),
+        )
+        .route(
+            "/project/name/:name",
+            delete(handler::delete_project_by_name),
         )
         .route("/upload", post(handler::upload))
         .layer(CorsLayer::permissive())

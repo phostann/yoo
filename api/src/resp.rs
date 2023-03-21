@@ -1,15 +1,13 @@
-use serde::{Serialize};
+use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct Response<T: Serialize>
-{
+pub struct Response<T: Serialize> {
     pub data: T,
     pub code: u64,
     pub msg: String,
 }
 
-impl<T: Serialize> Response<T>
-{
+impl<T: Serialize> Response<T> {
     pub fn new(data: T) -> Self {
         Self {
             data,
@@ -28,7 +26,8 @@ pub struct PageData<T: Serialize> {
 
 #[derive(Serialize)]
 pub struct PageResponse<T>
-    where T: Serialize
+where
+    T: Serialize,
 {
     pub data: PageData<T>,
     pub code: u64,

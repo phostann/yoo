@@ -212,4 +212,12 @@ impl Mutation {
     pub async fn delete_project_by_id(db: &DbConn, id: i32) -> Result<DeleteResult, DbErr> {
         Project::delete_by_id(id).exec(db).await
     }
+
+    // delete project by name
+    pub async fn delete_project_by_name(db: &DbConn, name: String) -> Result<DeleteResult, DbErr> {
+        Project::delete_many()
+            .filter(projects::Column::Name.eq(name))
+            .exec(db)
+            .await
+    }
 }

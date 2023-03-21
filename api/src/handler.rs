@@ -537,3 +537,19 @@ pub async fn delete_project_by_id(
         Err((StatusCode::NOT_FOUND, "Project not found".to_string()))
     }
 }
+
+pub async fn delete_project_by_name(
+    _: Claims,
+    state: State<AppState>,
+    Path(name): Path<String>,
+) -> Result<Json<Resp<()>>, (StatusCode, String)> {
+    let res = MutationCore::delete_project_by_name(&state.conn, name)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if res.rows_affected == 1 {
+        Ok(Json(Resp::new(())))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Project not found".to_string()))
+    }
+}
